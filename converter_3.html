@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#0f0f0f">
+<title>Конвертер валют</title>
+<style>
+:root{--bg:#0f0f0f;--card:#181818;--border:#272727;--text:#f0f0f0;--muted:#555;--muted2:#888;--green:#34c759;--yellow:#ffd60a}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--bg);color:var(--text);font-family:-apple-system,'Segoe UI',system-ui,sans-serif;min-height:100vh}
+body{display:flex;justify-content:center;padding:24px 16px 48px}
+.app{width:100%;max-width:400px}
+.hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.hdr-title{font-size:20px;font-weight:700;letter-spacing:-.3px}
+.pill{font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px}
+.pill-live{background:rgba(52,199,89,.15);color:var(--green)}
+.pill-cache{background:rgba(255,214,10,.12);color:var(--yellow)}
+.pill-off{background:#1e1e1e;color:var(--muted)}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.tab{font-size:13px;font-weight:500;padding:7px 14px;border-radius:30px;border:1px solid var(--border);background:var(--card);color:var(--muted2);cursor:pointer}
+.tab:hover{color:var(--text)}
+.tab.active{background:var(--text);color:#000;border-color:var(--text);font-weight:700}
+.input-box{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:14px 18px;margin-bottom:14px}
+.input-label{font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px}
+.input-row{display:flex;align-items:center;gap:8px}
+.amount-inp{flex:1;width:0;font-size:36px;font-weight:300;letter-spacing:-.5px;background:transparent;border:none;outline:none;color:var(--text);caret-color:var(--green);font-family:inherit;-webkit-appearance:none}
+.amount-inp::placeholder{color:var(--muted)}
+.amount-sym{font-size:24px;font-weight:300;color:var(--muted2);flex-shrink:0}
+.quick-row{display:flex;gap:5px;margin-top:12px;flex-wrap:wrap}
+.qbtn{font-size:11px;font-weight:500;padding:5px 11px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted2);cursor:pointer}
+.qbtn:active{opacity:.5}
+.results{display:flex;flex-direction:column}
+.rcard{display:flex;align-items:center;padding:13px 0;border-bottom:1px solid var(--border)}
+.rcard:last-child{border-bottom:none}
+.rc-flag{font-size:26px;line-height:1;width:40px;flex-shrink:0}
+.rc-info{flex:1}
+.rc-code{font-size:15px;font-weight:700;letter-spacing:.02em}
+.rc-rate{font-size:11px;color:var(--muted2);margin-top:2px}
+.rc-val-wrap{text-align:right}
+.rc-val{font-size:22px;font-weight:400;letter-spacing:-.3px}
+.rc-val.dash{color:var(--muted);font-weight:300;font-size:20px}
+.footer{display:flex;align-items:center;justify-content:space-between;margin-top:18px}
+.refbtn{font-size:12px;font-weight:500;padding:7px 14px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted2);cursor:pointer;display:flex;align-items:center;gap:5px}
+.refbtn:active{opacity:.5}
+.footer-right{text-align:right}
+.src-label{font-size:10px;color:var(--muted);margin-bottom:1px}
+.upd{font-size:10px;color:var(--muted)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin{display:inline-block;animation:spin .7s linear infinite}
+.ico{width:13px;height:13px;flex-shrink:0}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="hdr">
+    <span class="hdr-title">Конвертер валют</span>
+    <span class="pill pill-off" id="pill">Резерв</span>
+  </div>
+  <div class="tabs" id="tabs"></div>
+  <div class="input-box">
+    <div class="input-label">Сумма — <span id="src-name">тенге</span></div>
+    <div class="input-row">
+      <input class="amount-inp" id="amount" type="number" inputmode="decimal" placeholder="0" value="10000">
+      <span class="amount-sym" id="src-sym">₸</span>
+    </div>
+    <div class="quick-row" id="qrow"></div>
+  </div>
+  <div class="results" id="results"></div>
+  <div class="footer">
+    <button class="refbtn" id="refbtn">
+      <svg class="ico" id="refico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="1 4 1 10 7 10"></polyline>
+        <path d="M3.51 15a9 9 0 1 0 .49-3.51"></path>
+      </svg>
+      Обновить курс
+    </button>
+    <div class="footer-right">
+      <div class="src-label" id="src-line">резервные данные</div>
+      <div class="upd" id="upd"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+var ALL=[
+  {code:'kzt',name:'Тенге',      sym:'₸',   flag:'🇰🇿',q:[10000,50000,100000,500000,1000000]},
+  {code:'usd',name:'Доллар США', sym:'$',   flag:'🇺🇸',q:[100,500,1000,5000,10000]},
+  {code:'rub',name:'Рос. рубль', sym:'₽',   flag:'🇷🇺',q:[1000,5000,10000,50000,100000]},
+  {code:'cny',name:'Юань',       sym:'¥',   flag:'🇨🇳',q:[100,500,1000,5000,10000]},
+  {code:'eur',name:'Евро',       sym:'€',   flag:'🇪🇺',q:[50,100,500,1000,5000]},
+  {code:'aed',name:'Дирхам ОАЭ',sym:'د.إ', flag:'🇦🇪',q:[100,500,1000,5000,10000]}
+];
+
+// Резервные курсы — зашиты прямо в код, не зависят от интернета
+var KZT={kzt:1,usd:484.0,rub:5.7,cny:66.7,eur:542.0,aed:131.7};
+var src='kzt';
+
+function info(c){for(var i=0;i<ALL.length;i++)if(ALL[i].code===c)return ALL[i];return ALL[0];}
+function getAmt(){var v=parseFloat(document.getElementById('amount').value);return(isNaN(v)||v<0)?0:v;}
+function cross(f,t){var a=KZT[f]||0,b=KZT[t]||0;return(a&&b)?a/b:0;}
+
+function fmtVal(n,sym){
+  if(!n||isNaN(n)||n<=0)return null;
+  return sym+n.toLocaleString('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function fmtRate(f,t,r){
+  if(!r||r<=0)return'';
+  var s=r<0.01?r.toFixed(5):r<1?r.toFixed(4):r<100?r.toFixed(2):Math.round(r).toLocaleString('ru-RU');
+  return'1 '+f.toUpperCase()+' = '+s+' '+t.toUpperCase();
+}
+function vibrate(){try{if(navigator.vibrate)navigator.vibrate(10);}catch(e){}}
+
+function saveCache(sn){
+  try{localStorage.setItem('cvt9_r',JSON.stringify(KZT));localStorage.setItem('cvt9_t',String(Date.now()));localStorage.setItem('cvt9_s',sn||'');}catch(e){}
+}
+function readCache(){
+  try{
+    var r=localStorage.getItem('cvt9_r'),t=localStorage.getItem('cvt9_t'),s=localStorage.getItem('cvt9_s');
+    if(r)return{rates:JSON.parse(r),ts:t?parseInt(t):null,src:s||''};
+  }catch(e){}
+  return null;
+}
+function setPill(mode,ts){
+  var p=document.getElementById('pill'),u=document.getElementById('upd');
+  if(mode==='live'){p.className='pill pill-live';p.textContent='Онлайн';}
+  else if(mode==='cache'){p.className='pill pill-cache';p.textContent='Кэш';}
+  else{p.className='pill pill-off';p.textContent='Резерв';}
+  if(ts){var d=new Date(ts);u.textContent=d.toLocaleDateString('ru-RU')+' '+d.toTimeString().slice(0,5);}
+  else u.textContent='';
+}
+function setSourceLine(n){document.getElementById('src-line').textContent=n||'резервные данные';}
+
+// Построить вкладки
+function buildTabs(){
+  var w=document.getElementById('tabs');w.innerHTML='';
+  ALL.forEach(function(c){
+    var b=document.createElement('button');
+    b.className='tab'+(c.code===src?' active':'');
+    b.textContent=c.flag+' '+c.code.toUpperCase();
+    b.addEventListener('click',function(){setSrc(c.code);vibrate();});
+    w.appendChild(b);
+  });
+}
+
+// Построить быстрые кнопки
+function buildQuick(){
+  var nfo=info(src);
+  document.getElementById('src-name').textContent=nfo.name.toLowerCase();
+  document.getElementById('src-sym').textContent=nfo.sym;
+  var w=document.getElementById('qrow');w.innerHTML='';
+  nfo.q.forEach(function(a){
+    var b=document.createElement('button');b.className='qbtn';
+    b.textContent=a.toLocaleString('ru-RU');
+    b.addEventListener('click',function(){
+      document.getElementById('amount').value=a;
+      calc();
+    });
+    w.appendChild(b);
+  });
+}
+
+// Построить карточки результата и СРАЗУ посчитать в них
+function buildResultsAndCalc(){
+  var w=document.getElementById('results');
+  w.innerHTML='';
+  var amt=getAmt();
+  ALL.forEach(function(c){
+    if(c.code===src)return;
+    var r=cross(src,c.code);
+    var txt=fmtVal(amt*r,c.sym);
+    var valClass=txt?'rc-val':'rc-val dash';
+    var valText=txt||'—';
+    var rateText=fmtRate(src,c.code,r);
+    var d=document.createElement('div');
+    d.className='rcard';
+    d.innerHTML=
+      '<span class="rc-flag">'+c.flag+'</span>'+
+      '<div class="rc-info">'+
+        '<div class="rc-code">'+c.code.toUpperCase()+'</div>'+
+        '<div class="rc-rate" id="l-'+c.code+'">'+rateText+'</div>'+
+      '</div>'+
+      '<div class="rc-val-wrap">'+
+        '<div class="'+valClass+'" id="o-'+c.code+'">'+valText+'</div>'+
+      '</div>';
+    w.appendChild(d);
+  });
+}
+
+// Обновить только значения (без перестройки DOM)
+function calc(){
+  var amt=getAmt();
+  ALL.forEach(function(c){
+    if(c.code===src)return;
+    var ov=document.getElementById('o-'+c.code);
+    var lv=document.getElementById('l-'+c.code);
+    if(!ov||!lv)return;
+    var r=cross(src,c.code);
+    var txt=fmtVal(amt*r,c.sym);
+    if(txt){ov.textContent=txt;ov.className='rc-val';}
+    else{ov.textContent='—';ov.className='rc-val dash';}
+    lv.textContent=fmtRate(src,c.code,r);
+  });
+}
+
+function setSrc(code){
+  src=code;
+  buildTabs();
+  buildQuick();
+  buildResultsAndCalc(); // перестраиваем и сразу считаем
+}
+
+var APIS=[
+  {name:'НБК (Нацбанк РК)',url:'https://www.nationalbank.kz/rss/rates_all.xml',
+   parse:function(t){
+     var res={kzt:1},items=t.match(/<item>[\s\S]*?<\/item>/g)||[];
+     items.forEach(function(item){
+       var tM=item.match(/<title><!\[CDATA\[([A-Z]+)\]\]><\/title>|<title>([A-Z]+)<\/title>/);
+       var dM=item.match(/<description><!\[CDATA\[([\d.]+)\]\]><\/description>|<description>([\d.]+)<\/description>/);
+       var qM=item.match(/<quant>([\d]+)<\/quant>/);
+       if(tM&&dM){var c=(tM[1]||tM[2]).toLowerCase(),r=parseFloat(dM[1]||dM[2]),q=qM?parseInt(qM[1]):1;if(r>0)res[c]=r/q;}
+     });
+     return Object.keys(res).length>=4?res:null;
+   }
+  },
+  {name:'Open Exchange Rates',url:'https://open.er-api.com/v6/latest/KZT',
+   parse:function(t){
+     var d=JSON.parse(t);if(!d||!d.rates)return null;
+     var res={kzt:1};
+     ['USD','RUB','CNY','EUR','AED'].forEach(function(c){if(d.rates[c]>0)res[c.toLowerCase()]=1/d.rates[c];});
+     return Object.keys(res).length>=4?res:null;
+   }
+  },
+  {name:'Frankfurter (ЕЦБ)',url:'https://api.frankfurter.app/latest?from=KZT&to=USD,RUB,CNY,EUR,AED',
+   parse:function(t){
+     var d=JSON.parse(t);if(!d||!d.rates)return null;
+     var r=d.rates;
+     return{kzt:1,usd:r.USD?1/r.USD:0,rub:r.RUB?1/r.RUB:0,cny:r.CNY?1/r.CNY:0,eur:r.EUR?1/r.EUR:0,aed:r.AED?1/r.AED:0};
+   }
+  }
+];
+
+function tryApi(i,onOk,onFail){
+  if(i>=APIS.length){onFail();return;}
+  var api=APIS[i];
+  fetch(api.url)
+    .then(function(r){if(!r.ok)throw new Error(r.status);return r.text();})
+    .then(function(t){var res=api.parse(t);if(res)onOk(res,api.name);else tryApi(i+1,onOk,onFail);})
+    .catch(function(){tryApi(i+1,onOk,onFail);});
+}
+
+function fetchRates(){
+  var ico=document.getElementById('refico');
+  ico.classList.add('spin');
+  tryApi(0,
+    function(res,name){
+      ['usd','rub','cny','eur','aed'].forEach(function(c){if(res[c]&&res[c]>0)KZT[c]=res[c];});
+      saveCache(name);
+      calc();
+      setSourceLine(name);
+      setPill('live',Date.now());
+      ico.classList.remove('spin');
+    },
+    function(){
+      ico.classList.remove('spin');
+    }
+  );
+}
+
+// ── ИНИЦИАЛИЗАЦИЯ ──
+// 1. Загрузить кэш если есть (перекрывает резервные)
+var cached=readCache();
+if(cached&&cached.rates){
+  Object.assign(KZT,cached.rates);
+  setSourceLine(cached.src||'кэш');
+  setPill('cache',cached.ts);
+} else {
+  setPill('off',null);
+  setSourceLine('резервные данные');
+}
+
+// 2. Построить UI — карточки строятся С ДАННЫМИ сразу
+buildTabs();
+buildQuick();
+buildResultsAndCalc(); // ← строим и считаем за один проход
+
+// 3. Навесить события
+document.getElementById('amount').addEventListener('input',calc);
+document.getElementById('refbtn').addEventListener('click',function(){vibrate();fetchRates();});
+
+// 4. Обновить в фоне
+fetchRates();
+</script>
+</body>
+</html>
