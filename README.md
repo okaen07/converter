@@ -21,8 +21,8 @@ HTML / CSS / JavaScript — без фреймворков и сборщиков.
 
 Запуск локально
 bash
-git clone https://github.com/ПОЛЬЗОВАТЕЛЬ/РЕПОЗИТОРИЙ.git
-cd РЕПОЗИТОРИЙ
+git clone https://github.com/okaen07/converter.git
+cd converter
 
 Просто открой index.html в браузере.
 
@@ -36,7 +36,7 @@ cd РЕПОЗИТОРИЙ
 Roadmap
  Добавить историю курсов / график
  Добавить ещё валюты
- PWA-версия для установки на телефон
+✅ PWA-версия: открой okaen07.github.io/converter → «Поделиться» → «На экран Домой»
 Лицензия
 
 MIT — используй, форкай, дорабатывай.
