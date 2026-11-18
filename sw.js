@@ -1,6 +1,6 @@
 // Кэширует саму оболочку приложения, чтобы иконка открывалась даже без интернета.
 // Запросы курсов (другие домены) идут в сеть как обычно.
-var CACHE='converter-v1';
+var CACHE='converter-v2';
 var FILES=['./','./index.html','./manifest.json','./apple-touch-icon.png','./icon-192.png','./icon-512.png'];
 self.addEventListener('install',function(e){
   e.waitUntil(caches.open(CACHE).then(function(c){return c.addAll(FILES);}));

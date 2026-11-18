@@ -96,11 +96,12 @@ var ALL=[
   {code:'rub',name:'Рос. рубль', sym:'₽',   flag:'🇷🇺',q:[1000,5000,10000,50000,100000]},
   {code:'cny',name:'Юань',       sym:'¥',   flag:'🇨🇳',q:[100,500,1000,5000,10000]},
   {code:'eur',name:'Евро',       sym:'€',   flag:'🇪🇺',q:[50,100,500,1000,5000]},
-  {code:'aed',name:'Дирхам ОАЭ',sym:'د.إ', flag:'🇦🇪',q:[100,500,1000,5000,10000]}
+  {code:'aed',name:'Дирхам ОАЭ',sym:'د.إ', flag:'🇦🇪',q:[100,500,1000,5000,10000]},
+  {code:'thb',name:'Тайский бат',sym:'฿',   flag:'🇹🇭',q:[100,500,1000,5000,10000]}
 ];
 
 // Резервные курсы — зашиты прямо в код, не зависят от интернета
-var KZT={kzt:1,usd:484.0,rub:5.7,cny:66.7,eur:542.0,aed:131.7};
+var KZT={kzt:1,usd:484.0,rub:5.7,cny:66.7,eur:542.0,aed:131.7,thb:14.8};
 var src='kzt';
 
 function info(c){for(var i=0;i<ALL.length;i++)if(ALL[i].code===c)return ALL[i];return ALL[0];}
@@ -234,15 +235,15 @@ var APIS=[
    parse:function(t){
      var d=JSON.parse(t);if(!d||!d.rates)return null;
      var res={kzt:1};
-     ['USD','RUB','CNY','EUR','AED'].forEach(function(c){if(d.rates[c]>0)res[c.toLowerCase()]=1/d.rates[c];});
+     ['USD','RUB','CNY','EUR','AED','THB'].forEach(function(c){if(d.rates[c]>0)res[c.toLowerCase()]=1/d.rates[c];});
      return Object.keys(res).length>=4?res:null;
    }
   },
-  {name:'Frankfurter (ЕЦБ)',url:'https://api.frankfurter.app/latest?from=KZT&to=USD,RUB,CNY,EUR,AED',
+  {name:'Frankfurter (ЕЦБ)',url:'https://api.frankfurter.app/latest?from=KZT&to=USD,RUB,CNY,EUR,AED,THB',
    parse:function(t){
      var d=JSON.parse(t);if(!d||!d.rates)return null;
      var r=d.rates;
-     return{kzt:1,usd:r.USD?1/r.USD:0,rub:r.RUB?1/r.RUB:0,cny:r.CNY?1/r.CNY:0,eur:r.EUR?1/r.EUR:0,aed:r.AED?1/r.AED:0};
+     return{kzt:1,usd:r.USD?1/r.USD:0,rub:r.RUB?1/r.RUB:0,cny:r.CNY?1/r.CNY:0,eur:r.EUR?1/r.EUR:0,aed:r.AED?1/r.AED:0,thb:r.THB?1/r.THB:0};
    }
   }
 ];
@@ -261,7 +262,7 @@ function fetchRates(){
   ico.classList.add('spin');
   tryApi(0,
     function(res,name){
-      ['usd','rub','cny','eur','aed'].forEach(function(c){if(res[c]&&res[c]>0)KZT[c]=res[c];});
+      ['usd','rub','cny','eur','aed','thb'].forEach(function(c){if(res[c]&&res[c]>0)KZT[c]=res[c];});
       saveCache(name);
       calc();
       setSourceLine(name);
